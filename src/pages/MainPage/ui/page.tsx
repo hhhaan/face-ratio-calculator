@@ -9,6 +9,7 @@ export const MainPage = () => {
     const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(null);
     const [isVideoLoaded, setIsVideoLoaded] = useState(false);
     const [isFreezed, setIsFreezed] = useState(false);
+    const [hasCameraPermission, setHasCameraPermission] = useState<boolean>(false);
 
     const [faceRatios, setFaceRatios] = useState<{
         forehead: number;
@@ -22,12 +23,17 @@ export const MainPage = () => {
     useEffect(() => {
         const init = async () => {
             await Promise.all([initializeFaceDetector(), initializeFaceLandmarker()]);
-            requestCameraPermission().then((stream) => {
+            try {
+                const stream = await requestCameraPermission();
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
                     videoRef.current.onloadeddata = () => setIsVideoLoaded(true);
                 }
-            });
+                setHasCameraPermission(true);
+            } catch (error) {
+                console.error('Camera permission denied:', error);
+                setHasCameraPermission(false);
+            }
         };
         init();
     }, []);
@@ -181,31 +187,40 @@ export const MainPage = () => {
 
     return (
         <div className="flex flex-col items-center justify-center h-screen p-20">
-            <p className="text-3xl pb-10">look straight ahead</p>
-            <div className="flex flex-row items-center justify-center">
-                <div className="relative">
-                    <video
-                        ref={videoRef}
-                        autoPlay
-                        muted
-                        loop
-                        className="w-full h-full object-cover scale-x-[-1] absolute"
-                    />
-                    <canvas ref={canvasRef} className="scale-x-[-1]" />
+            {!hasCameraPermission ? (
+                <div className="text-center">
+                    <p className="text-2xl mb-4">카메라 권한이 필요합니다</p>
+                    <p>얼굴 비율을 측정하기 위해 카메라 접근 권한을 허용해주세요</p>
                 </div>
-                <div className="flex flex-col h-full bg-black botder border-white items-center justify-between py-10">
-                    <div className="flex flex-col items-start px-5  text-white">
-                        <p>forehead: {faceRatios.forehead}%</p>
-                        <p>midFace: {faceRatios.midFace}%</p>
-                        <p>lowerFace: {faceRatios.lowerFace}%</p>
+            ) : (
+                <>
+                    <p className="text-3xl pb-10">look straight ahead</p>
+                    <div className="flex flex-row items-center justify-center">
+                        <div className="relative">
+                            <video
+                                ref={videoRef}
+                                autoPlay
+                                muted
+                                loop
+                                className="w-full h-full object-cover scale-x-[-1] absolute"
+                            />
+                            <canvas ref={canvasRef} className="scale-x-[-1]" />
+                        </div>
+                        <div className="flex flex-col h-full bg-black botder border-white items-center justify-between py-10">
+                            <div className="flex flex-col items-start px-5  text-white">
+                                <p>forehead: {faceRatios.forehead}%</p>
+                                <p>midFace: {faceRatios.midFace}%</p>
+                                <p>lowerFace: {faceRatios.lowerFace}%</p>
+                            </div>
+                            <div>
+                                <button className="bg-white text-black px-5 py-2 cursor-pointer" onClick={toggleFreeze}>
+                                    {isFreezed ? 'unfreeze' : 'freeze'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <button className="bg-white text-black px-5 py-2 cursor-pointer" onClick={toggleFreeze}>
-                            {isFreezed ? 'unfreeze' : 'freeze'}
-                        </button>
-                    </div>
-                </div>
-            </div>
+                </>
+            )}
         </div>
     );
 };
