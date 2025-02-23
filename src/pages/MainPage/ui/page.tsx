@@ -191,6 +191,23 @@ export const MainPage = () => {
                 <div className="text-center">
                     <p className="text-2xl mb-4">카메라 권한이 필요합니다</p>
                     <p>얼굴 비율을 측정하기 위해 카메라 접근 권한을 허용해주세요</p>
+                    <button
+                        className="bg-black text-white px-5 py-2 cursor-pointer"
+                        onClick={async () => {
+                            try {
+                                const stream = await requestCameraPermission();
+                                if (videoRef.current) {
+                                    videoRef.current.srcObject = stream;
+                                    videoRef.current.onloadeddata = () => setIsVideoLoaded(true);
+                                }
+                                setHasCameraPermission(true);
+                            } catch (error) {
+                                console.error('Camera permission denied:', error);
+                            }
+                        }}
+                    >
+                        카메라 권한 허용
+                    </button>
                 </div>
             ) : (
                 <>
