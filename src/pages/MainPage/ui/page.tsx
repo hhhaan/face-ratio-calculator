@@ -8,6 +8,7 @@ export const MainPage = () => {
     const [faceDetector, setFaceDetector] = useState<FaceDetector | null>(null);
     const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(null);
     const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+    const [isFreezed, setIsFreezed] = useState(false);
 
     const [faceRatios, setFaceRatios] = useState<{
         forehead: number;
@@ -53,6 +54,15 @@ export const MainPage = () => {
             'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'
         );
         setFaceLandmarker(landmarker);
+    };
+
+    const toggleFreeze = () => {
+        setIsFreezed(!isFreezed);
+        if (!isFreezed) {
+            videoRef.current?.pause();
+        } else {
+            videoRef.current?.play();
+        }
     };
 
     // 얼굴 감지 및 랜드마크, 비율 계산 후 결과를 캔버스에 그리는 함수
@@ -108,12 +118,14 @@ export const MainPage = () => {
 
                         const totalHeight = extendedBox.height;
 
-                        // 비율 계산 및 state 업데이트
-                        setFaceRatios({
-                            forehead: Number(((foreheadHeight / totalHeight) * 100).toFixed(1)),
-                            midFace: Number(((midFaceHeight / totalHeight) * 100).toFixed(1)),
-                            lowerFace: Number(((lowerFaceHeight / totalHeight) * 100).toFixed(1)),
-                        });
+                        if (!isFreezed) {
+                            // 비율 계산 및 state 업데이트
+                            setFaceRatios({
+                                forehead: Number(((foreheadHeight / totalHeight) * 100).toFixed(1)),
+                                midFace: Number(((midFaceHeight / totalHeight) * 100).toFixed(1)),
+                                lowerFace: Number(((lowerFaceHeight / totalHeight) * 100).toFixed(1)),
+                            });
+                        }
 
                         // 기준선 그리기 (빨간선)
                         ctx.strokeStyle = '#FF0000';
@@ -153,7 +165,7 @@ export const MainPage = () => {
                 console.error('Detection error:', error);
             }
         }
-    }, [faceDetector, faceLandmarker, isVideoLoaded]);
+    }, [faceDetector, faceLandmarker, isVideoLoaded, isFreezed]);
 
     useEffect(() => {
         let animationFrameId: number;
@@ -169,7 +181,7 @@ export const MainPage = () => {
 
     return (
         <div className="flex flex-col items-center justify-center h-screen p-20">
-            <p className="text-3xl">look straight ahead</p>
+            <p className="text-3xl pb-10">look straight ahead</p>
             <div className="flex flex-row items-center justify-center">
                 <div className="relative">
                     <video
@@ -181,10 +193,17 @@ export const MainPage = () => {
                     />
                     <canvas ref={canvasRef} className="scale-x-[-1]" />
                 </div>
-                <div className="flex h-full flex-col items-start p-4 bg-black text-white">
-                    <p>이마: {faceRatios.forehead}%</p>
-                    <p>중안부: {faceRatios.midFace}%</p>
-                    <p>하안부: {faceRatios.lowerFace}%</p>
+                <div className="flex flex-col h-full bg-black botder border-white items-center justify-between py-10">
+                    <div className="flex flex-col items-start px-5  text-white">
+                        <p>forehead: {faceRatios.forehead}%</p>
+                        <p>midFace: {faceRatios.midFace}%</p>
+                        <p>lowerFace: {faceRatios.lowerFace}%</p>
+                    </div>
+                    <div>
+                        <button className="bg-white text-black px-5 py-2 cursor-pointer" onClick={toggleFreeze}>
+                            {isFreezed ? 'unfreeze' : 'freeze'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
