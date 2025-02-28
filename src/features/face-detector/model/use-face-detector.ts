@@ -5,11 +5,13 @@ export const useFaceDetector = ({
     videoRef,
     isVideoLoaded,
     isFreezed,
+    boxHeight,
 }: // setIsFreezed,
 {
     videoRef: React.RefObject<HTMLVideoElement | null>;
     isVideoLoaded: boolean;
     isFreezed: boolean;
+    boxHeight: number;
     // setIsFreezed: (isFreezed: boolean) => void;
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -83,11 +85,14 @@ export const useFaceDetector = ({
             const box = detection.boundingBox;
             if (!box) return;
 
+            const baseExtensionRatio = 0.3;
+            const adjustedExtensionRatio = baseExtensionRatio + boxHeight;
+
             const extendedBox = {
                 originX: box.originX,
-                originY: box.originY - box.height * 0.3,
+                originY: box.originY - box.height * adjustedExtensionRatio,
                 width: box.width,
-                height: box.height * 1.3,
+                height: box.height * (1 + adjustedExtensionRatio),
             };
 
             const landmarkResult = faceLandmarker.detect(canvas);
@@ -159,7 +164,7 @@ export const useFaceDetector = ({
                 ctx.strokeRect(extendedBox.originX, extendedBox.originY, extendedBox.width, extendedBox.height);
             }
         });
-    }, [faceDetector, faceLandmarker, videoRef, canvasRef, setFaceRatios]);
+    }, [faceDetector, faceLandmarker, videoRef, canvasRef, setFaceRatios, boxHeight]);
 
     // 애니메이션 루프
     useEffect(() => {
@@ -176,7 +181,7 @@ export const useFaceDetector = ({
                 cancelAnimationFrame(animationFrameId);
             };
         }
-    }, [detectFace, faceDetector, faceLandmarker, isVideoLoaded, isFreezed]);
+    }, [detectFace, faceDetector, faceLandmarker, isVideoLoaded, isFreezed, boxHeight]);
 
     return { faceDetector, faceLandmarker, faceRatios, canvasRef, detectFace };
 };

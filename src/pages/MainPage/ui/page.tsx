@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCamera } from '@/features/camera';
 import { useFaceDetector } from '@/features/face-detector';
 import { ratio111Score } from '@/features/scoring';
@@ -12,13 +12,14 @@ export const MainPage = () => {
     const [showResult, setShowResult] = useState(false);
     const [score, setScore] = useState(0);
     const [isCalculating, setIsCalculating] = useState(false);
+    const [boxHeight, setBoxHeight] = useState(0);
     const { videoRef, isVideoLoaded, isFreezed, setIsFreezed } = useCamera();
     const { faceRatios, canvasRef } = useFaceDetector({
         videoRef,
         isVideoLoaded,
         isFreezed,
+        boxHeight,
     });
-    const resultCardRef = useRef<HTMLDivElement>(null);
 
     const toggleFreeze = () => {
         setIsFreezed(!isFreezed);
@@ -32,6 +33,9 @@ export const MainPage = () => {
         }
     };
 
+    useEffect(() => {
+        console.log(boxHeight);
+    }, [boxHeight]);
     const handleCalculateScore = () => {
         if (!isFreezed) {
             alert('먼저 촬영을 해주세요!');
@@ -58,6 +62,8 @@ export const MainPage = () => {
                 toggleFreeze={toggleFreeze}
             />
 
+            <HairlineSlider isFreezed={isFreezed} boxHeight={boxHeight} setBoxHeight={setBoxHeight} />
+
             {/* 얼굴 비율 데이터 표시 */}
             <FaceRatioAnalysis faceRatios={faceRatios} />
 
@@ -65,12 +71,7 @@ export const MainPage = () => {
             <CalculateButton isFreezed={isFreezed} handleCalculateScore={handleCalculateScore} />
 
             {/* 점수 결과 UI - 계산된 후에만 표시 */}
-
-            {/* {showResult && <ResultCard score={score} faceRatios={faceRatios} />} */}
-            {/* 점수 결과 UI - 계산된 후에만 표시 */}
-            <div id="result-container" ref={resultCardRef}>
-                {showResult && <ResultCard score={score} faceRatios={faceRatios} />}
-            </div>
+            {showResult && <ResultCard score={score} faceRatios={faceRatios} />}
 
             {/* 공유 버튼 영역 - 결과가 표시된 경우에만 표시 */}
             <ShareButtons />
@@ -83,6 +84,43 @@ export const ShareButtons = () => {
         <div className="flex justify-end gap-2">
             <ClipBoardShareButton />
             <KakaoShareButton />
+        </div>
+    );
+};
+const HairlineSlider = ({
+    isFreezed,
+    boxHeight,
+    setBoxHeight,
+}: {
+    isFreezed: boolean;
+    boxHeight: number;
+    setBoxHeight: (height: number) => void;
+}) => {
+    const handleHairlineAdjustment = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = parseFloat(e.target.value);
+        setBoxHeight(value);
+    };
+    return (
+        <div className="my-4">
+            <label htmlFor="hairline-slider" className="block text-sm font-medium text-gray-700 mb-1">
+                헤어라인 조정
+            </label>
+            <input
+                id="hairline-slider"
+                type="range"
+                min="-0.1"
+                max="0.1"
+                step="0.01"
+                value={boxHeight}
+                onChange={handleHairlineAdjustment}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                disabled={isFreezed} // 촬영 상태에서만 조정 가능
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>낮게</span>
+                <span>기본값</span>
+                <span>높게</span>
+            </div>
         </div>
     );
 };

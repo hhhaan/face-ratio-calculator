@@ -16,7 +16,7 @@ export const CalculateButton = ({
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
             >
-                얼굴 황금비율 점수 분석하기
+                황금비율 점수 분석하기
             </button>
         </div>
     );
