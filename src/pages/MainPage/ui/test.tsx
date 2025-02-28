@@ -6,6 +6,7 @@ import { ratio111Score } from '@/features/scoring';
 import { KakaoShareButton, ClipBoardShareButton } from '@/features/share-link';
 
 export const TestPage = () => {
+    // 깃 cicd 무시용
     const [showResult, setShowResult] = useState(false);
     const [score, setScore] = useState(0);
     const [isCalculating, setIsCalculating] = useState(false);
