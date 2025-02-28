@@ -11,3 +11,15 @@ export const trackPageView = () => {
         });
     }
 };
+
+// 공유 이벤트를 측정하는 함수
+export const trackShare = (method: string, contentType = 'face_analysis_result') => {
+    if (analytics) {
+        logEvent(analytics, 'share', {
+            method: method, // 'kakao', 'clipboard' 등
+            content_type: contentType,
+            item_id: window.location.pathname,
+            timestamp: new Date().toISOString(),
+        });
+    }
+};

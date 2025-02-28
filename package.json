@@ -12,7 +12,11 @@
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.21",
     "@tailwindcss/vite": "^4.0.8",
+    "@types/kakao-js-sdk": "^1.39.5",
+    "dom-to-image-improved": "^2.8.0",
     "firebase": "^11.3.1",
+    "kakao-js-sdk": "^1.2.3",
+    "lucide-react": "^0.476.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.2.0",
