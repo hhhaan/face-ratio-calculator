@@ -1,1 +1,0 @@
-export { requestCameraPermission } from './camera';
