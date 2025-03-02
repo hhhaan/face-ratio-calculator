@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useCamera } from '@/features/camera';
 import { useFaceDetector } from '@/features/face-detector';
 import { ratio111Score } from '@/features/scoring';
@@ -7,6 +7,8 @@ import { FaceCamera } from './face-camera';
 import { FaceRatioAnalysis } from './face-ratio-analysis';
 import { CalculateButton } from './calculate-button';
 import { ResultCard } from './result-card';
+import { SEOHelmet } from '@/shared/ui';
+import { HairlineSlider } from './slider';
 
 export const MainPage = () => {
     const [showResult, setShowResult] = useState(false);
@@ -33,9 +35,6 @@ export const MainPage = () => {
         }
     };
 
-    useEffect(() => {
-        console.log(boxHeight);
-    }, [boxHeight]);
     const handleCalculateScore = () => {
         if (!isFreezed) {
             alert('먼저 촬영을 해주세요!');
@@ -52,6 +51,7 @@ export const MainPage = () => {
 
     return (
         <div className="bg-gray-50 p-8 rounded-lg max-w-md mx-auto">
+            <SEOHelmet />
             <h2 className="text-xl font-bold text-center mb-6">얼굴 비율 분석</h2>
 
             <FaceCamera
@@ -84,43 +84,6 @@ export const ShareButtons = () => {
         <div className="flex justify-end gap-2">
             <ClipBoardShareButton />
             <KakaoShareButton />
-        </div>
-    );
-};
-const HairlineSlider = ({
-    isFreezed,
-    boxHeight,
-    setBoxHeight,
-}: {
-    isFreezed: boolean;
-    boxHeight: number;
-    setBoxHeight: (height: number) => void;
-}) => {
-    const handleHairlineAdjustment = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = parseFloat(e.target.value);
-        setBoxHeight(value);
-    };
-    return (
-        <div className="my-4">
-            <label htmlFor="hairline-slider" className="block text-sm font-medium text-gray-700 mb-1">
-                헤어라인 조정
-            </label>
-            <input
-                id="hairline-slider"
-                type="range"
-                min="-0.1"
-                max="0.1"
-                step="0.01"
-                value={boxHeight}
-                onChange={handleHairlineAdjustment}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                disabled={isFreezed} // 촬영 상태에서만 조정 가능
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>낮게</span>
-                <span>기본값</span>
-                <span>높게</span>
-            </div>
         </div>
     );
 };
