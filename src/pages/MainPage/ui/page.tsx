@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useCamera } from '@/features/camera';
 import { useFaceDetector } from '@/features/face-detector';
 import { ratio111Score } from '@/features/scoring';
-import { KakaoShareButton, ClipBoardShareButton } from '@/features/share-link';
+import { ShareButtons } from '@/features/share';
 import { FaceCamera } from './face-camera';
 import { FaceRatioAnalysis } from './face-ratio-analysis';
 import { CalculateButton } from './calculate-button';
@@ -52,7 +52,7 @@ export const MainPage = () => {
     return (
         <div className="bg-gray-50 p-8 rounded-lg max-w-md mx-auto">
             <SEOHelmet />
-            <h2 className="text-xl font-bold text-center mb-6">얼굴 비율 분석</h2>
+            <h2 className="text-xl font-bold text-center mb-6">중안부 길이 계산</h2>
 
             <FaceCamera
                 videoRef={videoRef}
@@ -64,7 +64,7 @@ export const MainPage = () => {
 
             <HairlineSlider isFreezed={isFreezed} boxHeight={boxHeight} setBoxHeight={setBoxHeight} />
 
-            {/* 얼굴 비율 데이터 표시 */}
+            {/* 중안부 길이 데이터 표시 */}
             <FaceRatioAnalysis faceRatios={faceRatios} />
 
             {/* 분석 버튼 */}
@@ -74,16 +74,7 @@ export const MainPage = () => {
             {showResult && <ResultCard score={score} faceRatios={faceRatios} />}
 
             {/* 공유 버튼 영역 - 결과가 표시된 경우에만 표시 */}
-            <ShareButtons />
-        </div>
-    );
-};
-
-export const ShareButtons = () => {
-    return (
-        <div className="flex justify-end gap-2">
-            <ClipBoardShareButton />
-            <KakaoShareButton />
+            <ShareButtons score={parseInt(score.toFixed(1))} showResult={showResult} />
         </div>
     );
 };
