@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { initializeVisionModels } from '@/shared/lib/mediapipe';
 import { FaceDetector, FaceLandmarker } from '@mediapipe/tasks-vision';
+import { FACE_DETECTION_CONFIG } from '@/features/face-detection/config';
+import { drawHorizontalLine } from '@/features/canvas/utils';
 
 export const useFaceDetector = ({
     videoRef,
@@ -72,7 +74,7 @@ export const useFaceDetector = ({
         canvas.width = video.videoWidth || 640;
         canvas.height = video.videoHeight || 480;
 
-        ctx.fillStyle = 'rgba(0,0,255,0.2)';
+        ctx.fillStyle = FACE_DETECTION_CONFIG.lineColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
@@ -81,8 +83,7 @@ export const useFaceDetector = ({
             const box = detection.boundingBox;
             if (!box || !faceDetector || !faceLandmarker) return;
 
-            const baseExtensionRatio = 0.3;
-            const adjustedExtensionRatio = baseExtensionRatio + boxHeightRef.current;
+            const adjustedExtensionRatio = FACE_DETECTION_CONFIG.baseExtensionRatio + boxHeightRef.current;
 
             const extendedBox = {
                 originX: box.originX,
@@ -117,47 +118,21 @@ export const useFaceDetector = ({
                     lowerFace: Number(((lowerFaceHeight / totalHeight) * 100).toFixed(1)),
                 });
 
-                // ctx.strokeStyle = '#00FF00';
-                ctx.strokeStyle = '#43FD00';
-                ctx.lineWidth = 2;
+                ctx.strokeStyle = FACE_DETECTION_CONFIG.lineColor;
+                ctx.lineWidth = FACE_DETECTION_CONFIG.lineWidth;
                 ctx.strokeRect(extendedBox.originX, extendedBox.originY, extendedBox.width, extendedBox.height);
 
                 // 기준선 그리기
-                ctx.beginPath();
-                ctx.moveTo(extendedBox.originX, hairlineY);
-                ctx.lineTo(extendedBox.originX + extendedBox.width, hairlineY);
-                // ctx.moveTo(0, hairlineY);
-                // ctx.lineTo(canvas.width, hairlineY);
-                ctx.stroke();
+                drawHorizontalLine(ctx, extendedBox.originX, hairlineY, extendedBox.width);
 
                 // 눈썹 아래 라인
-                ctx.beginPath();
-                ctx.moveTo(extendedBox.originX, eyebrowLineY);
-                ctx.lineTo(extendedBox.originX + extendedBox.width, eyebrowLineY);
-                // ctx.moveTo(0, eyebrowLineY);
-                // ctx.lineTo(canvas.width, eyebrowLineY);
-                ctx.stroke();
+                drawHorizontalLine(ctx, extendedBox.originX, eyebrowLineY, extendedBox.width);
 
                 // 코 아래 라인
-                ctx.beginPath();
-                ctx.moveTo(extendedBox.originX, noseBottomY);
-                ctx.lineTo(extendedBox.originX + extendedBox.width, noseBottomY);
-                // ctx.moveTo(0, noseBottomY);
-                // ctx.lineTo(canvas.width, noseBottomY);
-                ctx.stroke();
+                drawHorizontalLine(ctx, extendedBox.originX, noseBottomY, extendedBox.width);
 
                 // 턱 끝
-                ctx.beginPath();
-                ctx.moveTo(extendedBox.originX, chinBottomY);
-                ctx.lineTo(extendedBox.originX + extendedBox.width, chinBottomY);
-                // ctx.moveTo(0, chinBottomY);
-                // ctx.lineTo(canvas.width, chinBottomY);
-                ctx.stroke();
-
-                // 얼굴 박스
-                ctx.strokeStyle = '#43FD00';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(extendedBox.originX, extendedBox.originY, extendedBox.width, extendedBox.height);
+                drawHorizontalLine(ctx, extendedBox.originX, chinBottomY, extendedBox.width);
             }
         });
     }, [videoRef, faceDetector, faceLandmarker, setFaceRatios]);
