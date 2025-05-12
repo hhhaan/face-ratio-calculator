@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { initializeVisionModels } from '@/shared/lib/mediapipe';
 import { FaceDetector, FaceLandmarker } from '@mediapipe/tasks-vision';
 import { FACE_DETECTION_CONFIG } from '@/features/face-detection/config';
-import { drawHorizontalLine } from '@/features/canvas/utils';
+import { drawHorizontalLine, drawBox } from '@/features/canvas/utils';
 
 export const useFaceDetector = ({
     videoRef,
@@ -44,6 +44,16 @@ export const useFaceDetector = ({
     });
 
     useEffect(() => {
+        if (isVideoLoaded && videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+        }
+    }, [isVideoLoaded, videoRef]);
+
+    useEffect(() => {
         const init = async () => {
             try {
                 const { landmarker, detector } = await initializeVisionModels();
@@ -70,9 +80,6 @@ export const useFaceDetector = ({
             console.error('Video, canvas, or context not found');
             return;
         }
-
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
 
         ctx.fillStyle = FACE_DETECTION_CONFIG.lineColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -118,12 +125,18 @@ export const useFaceDetector = ({
                     lowerFace: Number(((lowerFaceHeight / totalHeight) * 100).toFixed(1)),
                 });
 
-                ctx.strokeStyle = FACE_DETECTION_CONFIG.lineColor;
-                ctx.lineWidth = FACE_DETECTION_CONFIG.lineWidth;
-                ctx.strokeRect(extendedBox.originX, extendedBox.originY, extendedBox.width, extendedBox.height);
+                drawBox(
+                    ctx,
+                    extendedBox.originX,
+                    extendedBox.originY,
+                    extendedBox.width,
+                    extendedBox.height,
+                    FACE_DETECTION_CONFIG.lineColor,
+                    FACE_DETECTION_CONFIG.lineWidth
+                );
 
-                // 기준선 그리기
-                drawHorizontalLine(ctx, extendedBox.originX, hairlineY, extendedBox.width);
+                // // 기준선 그리기
+                // drawHorizontalLine(ctx, extendedBox.originX, hairlineY, extendedBox.width);
 
                 // 눈썹 아래 라인
                 drawHorizontalLine(ctx, extendedBox.originX, eyebrowLineY, extendedBox.width);
@@ -132,7 +145,7 @@ export const useFaceDetector = ({
                 drawHorizontalLine(ctx, extendedBox.originX, noseBottomY, extendedBox.width);
 
                 // 턱 끝
-                drawHorizontalLine(ctx, extendedBox.originX, chinBottomY, extendedBox.width);
+                // drawHorizontalLine(ctx, extendedBox.originX, chinBottomY, extendedBox.width);
             }
         });
     }, [videoRef, faceDetector, faceLandmarker, setFaceRatios]);
