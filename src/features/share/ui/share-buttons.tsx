@@ -15,8 +15,15 @@ export const ShareButtons = ({ score, showResult }: ShareButtonsProps) => {
             return;
         }
 
+        // UTM 파라미터가 포함된 URL 생성
+        const baseUrl = 'https://face-ratio-calculator.web.app';
+        const url = new URL(baseUrl);
+        url.searchParams.append('utm_source', 'score_share');
+        url.searchParams.append('utm_medium', 'social');
+        url.searchParams.append('utm_campaign', 'share');
+
         // 공유할 텍스트 생성
-        const shareText = `내 얼굴 비율 점수는 ${score}점이에요! 🎉\n\n얼굴 비율 측정기로 나의 얼굴 비율을 확인해보세요.\nhttps://face-ratio-calculator.web.app`;
+        const shareText = `내 얼굴 비율 점수는 ${score}점이에요! 🎉\n\n얼굴 비율 측정기로 나의 얼굴 비율을 확인해보세요.\n${url.toString()}`;
 
         // 공유 API 호출
         if (navigator.share) {
@@ -24,7 +31,7 @@ export const ShareButtons = ({ score, showResult }: ShareButtonsProps) => {
                 .share({
                     title: '얼굴 비율 측정 결과',
                     text: shareText,
-                    url: 'https://face-ratio-calculator.web.app',
+                    url: url.toString(),
                 })
                 .catch((error) => {
                     console.log('공유 실패:', error);
@@ -62,7 +69,7 @@ export const ShareButtons = ({ score, showResult }: ShareButtonsProps) => {
                 title={!showResult ? '얼굴 비율을 측정하면 점수를 공유할 수 있어요!' : '나의 얼굴 비율 점수 공유하기'}
             >
                 <Share2 size={18} />
-                <span>점수 공유</span>
+                <span className="text-sm">점수 공유</span>
             </button>
         </div>
     );
