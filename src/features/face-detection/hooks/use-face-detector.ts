@@ -1,22 +1,25 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { FilesetResolver, FaceDetector, FaceLandmarker } from '@mediapipe/tasks-vision';
+import { initializeVisionModels } from '@/shared/lib/mediapipe';
+import { FaceDetector, FaceLandmarker } from '@mediapipe/tasks-vision';
+import { FACE_DETECTION_CONFIG } from '@/features/face-detection/config';
+import { drawHorizontalLine, drawBox } from '@/features/canvas/utils';
 
 export const useFaceDetector = ({
     videoRef,
     isVideoLoaded,
     isFreezed,
     boxHeight,
-}: // setIsFreezed,
-{
+}: {
     videoRef: React.RefObject<HTMLVideoElement | null>;
     isVideoLoaded: boolean;
     isFreezed: boolean;
     boxHeight: number;
-    // setIsFreezed: (isFreezed: boolean) => void;
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+
     const [faceDetector, setFaceDetector] = useState<FaceDetector | null>(null);
     const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(null);
+
     const [faceRatios, setFaceRatios] = useState<{
         forehead: number;
         midFace: number;
@@ -27,35 +30,40 @@ export const useFaceDetector = ({
         lowerFace: 0,
     });
 
-    const initializeVisionModels = async () => {
-        try {
-            const vision = await FilesetResolver.forVisionTasks(
-                'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
-            );
-
-            // FaceLandmarker 초기화
-            const landmarker = await FaceLandmarker.createFromModelPath(
-                vision,
-                'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'
-            );
-            setFaceLandmarker(landmarker);
-
-            // FaceDetector 초기화
-            const detector = await FaceDetector.createFromModelPath(
-                vision,
-                'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite'
-            );
-            setFaceDetector(detector);
-
-            console.log('Vision models initialized successfully');
-        } catch (error) {
-            console.error('Failed to initialize vision models:', error);
-            throw error;
-        }
-    };
+    const boxHeightRef = useRef<number>(boxHeight);
 
     useEffect(() => {
-        initializeVisionModels();
+        boxHeightRef.current = boxHeight;
+    }, [boxHeight]);
+
+    // 프레임 관련 변수들을 useRef로 관리하여 렌더링 사이에도 값이 유지되도록 함
+    const frameRef = useRef({
+        lastFrameTime: 0,
+        fps: 10,
+        frameInterval: 1000 / 10, // 15 FPS
+    });
+
+    useEffect(() => {
+        if (isVideoLoaded && videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+        }
+    }, [isVideoLoaded, videoRef]);
+
+    useEffect(() => {
+        const init = async () => {
+            try {
+                const { landmarker, detector } = await initializeVisionModels();
+                setFaceDetector(detector);
+                setFaceLandmarker(landmarker);
+            } catch (error) {
+                console.error('Failed to initialize vision models:', error);
+            }
+        };
+        init();
     }, []);
 
     const detectFace = useCallback(async () => {
@@ -66,27 +74,23 @@ export const useFaceDetector = ({
 
         const video = videoRef.current;
         const canvas = canvasRef.current;
-        const ctx = canvas?.getContext('2d');
+        const ctx = canvas?.getContext('2d', { alpha: false });
 
         if (!video || !canvas || !ctx) {
             console.error('Video, canvas, or context not found');
             return;
         }
 
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-
-        ctx.fillStyle = 'rgba(0,0,255,0.2)';
+        ctx.fillStyle = FACE_DETECTION_CONFIG.lineColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         const detections = faceDetector.detect(canvas);
         detections.detections.forEach((detection) => {
             const box = detection.boundingBox;
-            if (!box) return;
+            if (!box || !faceDetector || !faceLandmarker) return;
 
-            const baseExtensionRatio = 0.3;
-            const adjustedExtensionRatio = baseExtensionRatio + boxHeight;
+            const adjustedExtensionRatio = FACE_DETECTION_CONFIG.baseExtensionRatio + boxHeightRef.current;
 
             const extendedBox = {
                 originX: box.originX,
@@ -121,67 +125,63 @@ export const useFaceDetector = ({
                     lowerFace: Number(((lowerFaceHeight / totalHeight) * 100).toFixed(1)),
                 });
 
-                // ctx.strokeStyle = '#00FF00';
-                ctx.strokeStyle = '#43FD00';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(extendedBox.originX, extendedBox.originY, extendedBox.width, extendedBox.height);
+                drawBox(
+                    ctx,
+                    extendedBox.originX,
+                    extendedBox.originY,
+                    extendedBox.width,
+                    extendedBox.height,
+                    FACE_DETECTION_CONFIG.lineColor,
+                    FACE_DETECTION_CONFIG.lineWidth
+                );
 
-                // 기준선 그리기
-                ctx.beginPath();
-                ctx.moveTo(extendedBox.originX, hairlineY);
-                ctx.lineTo(extendedBox.originX + extendedBox.width, hairlineY);
-                // ctx.moveTo(0, hairlineY);
-                // ctx.lineTo(canvas.width, hairlineY);
-                ctx.stroke();
+                // // 기준선 그리기
+                // drawHorizontalLine(ctx, extendedBox.originX, hairlineY, extendedBox.width);
 
                 // 눈썹 아래 라인
-                ctx.beginPath();
-                ctx.moveTo(extendedBox.originX, eyebrowLineY);
-                ctx.lineTo(extendedBox.originX + extendedBox.width, eyebrowLineY);
-                // ctx.moveTo(0, eyebrowLineY);
-                // ctx.lineTo(canvas.width, eyebrowLineY);
-                ctx.stroke();
+                drawHorizontalLine(ctx, extendedBox.originX, eyebrowLineY, extendedBox.width);
 
                 // 코 아래 라인
-                ctx.beginPath();
-                ctx.moveTo(extendedBox.originX, noseBottomY);
-                ctx.lineTo(extendedBox.originX + extendedBox.width, noseBottomY);
-                // ctx.moveTo(0, noseBottomY);
-                // ctx.lineTo(canvas.width, noseBottomY);
-                ctx.stroke();
+                drawHorizontalLine(ctx, extendedBox.originX, noseBottomY, extendedBox.width);
 
                 // 턱 끝
-                ctx.beginPath();
-                ctx.moveTo(extendedBox.originX, chinBottomY);
-                ctx.lineTo(extendedBox.originX + extendedBox.width, chinBottomY);
-                // ctx.moveTo(0, chinBottomY);
-                // ctx.lineTo(canvas.width, chinBottomY);
-                ctx.stroke();
-
-                // 얼굴 박스
-                ctx.strokeStyle = '#43FD00';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(extendedBox.originX, extendedBox.originY, extendedBox.width, extendedBox.height);
+                // drawHorizontalLine(ctx, extendedBox.originX, chinBottomY, extendedBox.width);
             }
         });
-    }, [faceDetector, faceLandmarker, videoRef, canvasRef, setFaceRatios, boxHeight]);
+    }, [videoRef, faceDetector, faceLandmarker, setFaceRatios]);
 
     // 애니메이션 루프
     useEffect(() => {
         let animationFrameId: number;
-        const animate = () => {
+
+        const animate = (timestamp: number) => {
             if (!isFreezed) {
-                detectFace();
+                // 현재 시간과 마지막 프레임 시간의 차이 계산
+                const elapsed = timestamp - frameRef.current.lastFrameTime;
+
+                // 설정한 프레임 간격보다 많은 시간이 지났는지 확인
+                if (elapsed >= frameRef.current.frameInterval) {
+                    // 얼굴 감지 실행
+                    detectFace();
+
+                    // 마지막 프레임 시간 업데이트 (타이밍 정확도를 위한 보정 포함)
+                    frameRef.current.lastFrameTime = timestamp - (elapsed % frameRef.current.frameInterval);
+                }
+
+                // 다음 애니메이션 프레임 요청
                 animationFrameId = requestAnimationFrame(animate);
             }
         };
+
         if (faceDetector && faceLandmarker && isVideoLoaded && !isFreezed) {
-            animate();
+            // 첫 프레임에서 lastFrameTime 초기화를 위해 timestamp 전달
+            animationFrameId = requestAnimationFrame(animate);
+
             return () => {
                 cancelAnimationFrame(animationFrameId);
             };
         }
-    }, [detectFace, faceDetector, faceLandmarker, isVideoLoaded, isFreezed, boxHeight]);
+    }, [detectFace, faceDetector, faceLandmarker, isVideoLoaded, isFreezed]); // boxHeight 의존성 제거
 
     return { faceDetector, faceLandmarker, faceRatios, canvasRef, detectFace };
 };
