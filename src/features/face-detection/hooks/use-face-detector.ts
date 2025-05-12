@@ -16,6 +16,9 @@ export const useFaceDetector = ({
     boxHeight: number;
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const tempCanvasRef = useRef<HTMLCanvasElement | null>(null);
+    const tempCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+    const boxHeightRef = useRef<number>(boxHeight);
 
     const [faceDetector, setFaceDetector] = useState<FaceDetector | null>(null);
     const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(null);
@@ -30,8 +33,6 @@ export const useFaceDetector = ({
         lowerFace: 0,
     });
 
-    const boxHeightRef = useRef<number>(boxHeight);
-
     useEffect(() => {
         boxHeightRef.current = boxHeight;
     }, [boxHeight]);
@@ -39,9 +40,24 @@ export const useFaceDetector = ({
     // 프레임 관련 변수들을 useRef로 관리하여 렌더링 사이에도 값이 유지되도록 함
     const frameRef = useRef({
         lastFrameTime: 0,
-        fps: 9,
-        frameInterval: 1000 / 9, // 8 FPS
+        fps: 8,
+        frameInterval: 1000 / 8, // 8 FPS
     });
+
+    // useEffect에서 한 번만 생성
+    useEffect(() => {
+        // 임시 캔버스 초기화
+        tempCanvasRef.current = document.createElement('canvas');
+        tempCtxRef.current = tempCanvasRef.current.getContext('2d', { alpha: false });
+
+        // 컴포넌트 언마운트 시 정리
+        return () => {
+            if (tempCanvasRef.current) {
+                tempCanvasRef.current = null;
+                tempCtxRef.current = null;
+            }
+        };
+    }, []);
 
     useEffect(() => {
         const init = async () => {
@@ -71,28 +87,59 @@ export const useFaceDetector = ({
             return;
         }
 
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
+        // 원본 크기 저장
+        const originalWidth = video.videoWidth || 640;
+        const originalHeight = video.videoHeight || 480;
 
+        // 0.7 비율로 처리
+        const scale = 0.7;
+
+        // 처리용 임시 캔버스 생성
+        const tempCanvas = tempCanvasRef.current;
+        const tempCtx = tempCtxRef.current;
+        if (!tempCanvas || !tempCtx) return;
+
+        if (tempCanvas.width !== originalWidth * scale || tempCanvas.height !== originalHeight * scale) {
+            tempCanvas.width = originalWidth * scale;
+            tempCanvas.height = originalHeight * scale;
+        }
+
+        tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+        // 축소된 이미지로 감지 수행
+        const detections = faceDetector.detect(tempCanvas);
+        const landmarkResult = faceLandmarker.detect(tempCanvas);
+
+        // 원본 크기의 캔버스 설정
+        canvas.width = originalWidth;
+        canvas.height = originalHeight;
+
+        // 원본 비디오 프레임 그리기
         ctx.fillStyle = FACE_DETECTION_CONFIG.lineColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const detections = faceDetector.detect(canvas);
         detections.detections.forEach((detection) => {
             const box = detection.boundingBox;
             if (!box || !faceDetector || !faceLandmarker) return;
 
+            // 스케일에 맞게 좌표 조정
+            const scaledBox = {
+                originX: box.originX / scale,
+                originY: box.originY / scale,
+                width: box.width / scale,
+                height: box.height / scale,
+            };
+
             const adjustedExtensionRatio = FACE_DETECTION_CONFIG.baseExtensionRatio + boxHeightRef.current;
 
             const extendedBox = {
-                originX: box.originX,
-                originY: box.originY - box.height * adjustedExtensionRatio,
-                width: box.width,
-                height: box.height * (1 + adjustedExtensionRatio),
+                originX: scaledBox.originX,
+                originY: scaledBox.originY - scaledBox.height * adjustedExtensionRatio,
+                width: scaledBox.width,
+                height: scaledBox.height * (1 + adjustedExtensionRatio),
             };
 
-            const landmarkResult = faceLandmarker.detect(canvas);
             if (landmarkResult.faceLandmarks.length > 0) {
                 const landmarks = landmarkResult.faceLandmarks[0];
 
@@ -102,6 +149,7 @@ export const useFaceDetector = ({
 
                 const eyebrowBottomY = (leftEyebrowLower.y + rightEyebrowLower.y) / 2;
                 const hairlineY = extendedBox.originY;
+
                 const eyebrowLineY = eyebrowBottomY * canvas.height;
                 const noseBottomY = noseBottom.y * canvas.height;
                 const chinBottomY = extendedBox.originY + extendedBox.height;
