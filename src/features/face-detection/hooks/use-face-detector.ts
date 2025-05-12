@@ -39,19 +39,9 @@ export const useFaceDetector = ({
     // 프레임 관련 변수들을 useRef로 관리하여 렌더링 사이에도 값이 유지되도록 함
     const frameRef = useRef({
         lastFrameTime: 0,
-        fps: 10,
-        frameInterval: 1000 / 10, // 15 FPS
+        fps: 9,
+        frameInterval: 1000 / 9, // 8 FPS
     });
-
-    useEffect(() => {
-        if (isVideoLoaded && videoRef.current && canvasRef.current) {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-        }
-    }, [isVideoLoaded, videoRef]);
 
     useEffect(() => {
         const init = async () => {
@@ -80,6 +70,9 @@ export const useFaceDetector = ({
             console.error('Video, canvas, or context not found');
             return;
         }
+
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
 
         ctx.fillStyle = FACE_DETECTION_CONFIG.lineColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -135,17 +128,11 @@ export const useFaceDetector = ({
                     FACE_DETECTION_CONFIG.lineWidth
                 );
 
-                // // 기준선 그리기
-                // drawHorizontalLine(ctx, extendedBox.originX, hairlineY, extendedBox.width);
-
                 // 눈썹 아래 라인
                 drawHorizontalLine(ctx, extendedBox.originX, eyebrowLineY, extendedBox.width);
 
                 // 코 아래 라인
                 drawHorizontalLine(ctx, extendedBox.originX, noseBottomY, extendedBox.width);
-
-                // 턱 끝
-                // drawHorizontalLine(ctx, extendedBox.originX, chinBottomY, extendedBox.width);
             }
         });
     }, [videoRef, faceDetector, faceLandmarker, setFaceRatios]);
