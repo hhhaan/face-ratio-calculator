@@ -110,13 +110,12 @@ export const useFaceDetector = ({
         const detections = faceDetector.detect(tempCanvas);
         const landmarkResult = faceLandmarker.detect(tempCanvas);
 
-        // 원본 크기의 캔버스 설정
-        canvas.width = originalWidth;
-        canvas.height = originalHeight;
+        if (canvas.width !== originalWidth || canvas.height !== originalHeight) {
+            canvas.width = originalWidth;
+            canvas.height = originalHeight;
+        }
 
         // 원본 비디오 프레임 그리기
-        ctx.fillStyle = FACE_DETECTION_CONFIG.lineColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         detections.detections.forEach((detection) => {
@@ -173,7 +172,7 @@ export const useFaceDetector = ({
                     extendedBox.width,
                     extendedBox.height,
                     FACE_DETECTION_CONFIG.lineColor,
-                    FACE_DETECTION_CONFIG.lineWidth
+                    FACE_DETECTION_CONFIG.lineWidth,
                 );
 
                 // 눈썹 아래 라인
@@ -183,7 +182,7 @@ export const useFaceDetector = ({
                 drawHorizontalLine(ctx, extendedBox.originX, noseBottomY, extendedBox.width);
             }
         });
-    }, [videoRef, faceDetector, faceLandmarker, setFaceRatios]);
+    }, [videoRef, faceDetector, faceLandmarker]);
 
     // 애니메이션 루프
     useEffect(() => {
