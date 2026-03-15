@@ -1,4 +1,4 @@
-import { AdSenseAd } from '@/shared/ads/ui';
+import { AdSenseAd } from '@/shared/ui/AdSenseAd';
 
 export const Header = () => {
     return (

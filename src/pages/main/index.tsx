@@ -7,8 +7,10 @@ import { FaceCamera } from './ui/face-camera';
 import { FaceRatioAnalysis } from './ui/face-ratio-analysis';
 import { CalculateButton } from './ui/calculate-button';
 import { ResultCard } from './ui/result-card';
-import { SEOHelmet } from '@/shared/ui';
+import { SEOHelmet } from '@/shared/ui/SEO';
 import { HairlineSlider } from './ui/slider';
+import { InfoSection } from './ui/InfoSection';
+import { FAQSection } from './ui/FAQSection';
 
 export const MainPage = () => {
     const [showResult, setShowResult] = useState(false);
@@ -54,6 +56,7 @@ export const MainPage = () => {
             <SEOHelmet />
 
             {/* 메인 섹션 */}
+            <main>
             <section className="max-w-4xl mx-auto px-4 py-8">
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold mb-4">중안부 길이 계산기</h1>
@@ -88,52 +91,10 @@ export const MainPage = () => {
                 </div>
 
                 {/* 설명 섹션 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <div className="bg-white p-6 rounded-lg shadow-sm">
-                        <h2 className="text-xl font-semibold mb-4">중안부 길이란?</h2>
-                        <p className="text-gray-600 mb-4">
-                            중안부는 눈썹에서 코끝까지의 거리를 의미합니다. 이상적인 얼굴 비율에서 중안부는 전체 얼굴
-                            길이의 약 1/3을 차지합니다.
-                        </p>
-                        <ul className="list-disc list-inside text-gray-600 space-y-2">
-                            <li>이마 : 중안부 : 하안부 = 1 : 1 : 1 비율이 이상적</li>
-                            <li>중안부가 너무 길거나 짧으면 얼굴 균형이 깨질 수 있음</li>
-                        </ul>
-                    </div>
-                    <div className="bg-white p-6 rounded-lg shadow-sm">
-                        <h2 className="text-xl font-semibold mb-4">얼굴 비율 분석 방법</h2>
-                        <ol className="list-decimal list-inside text-gray-600 space-y-2">
-                            <li>정면을 바라보고 카메라를 정확히 응시</li>
-                            <li>머리카락을 이마가 보이도록 정리</li>
-                            <li>이마 시작점을 정확히 조절</li>
-                            <li>분석 버튼을 눌러 결과 확인</li>
-                        </ol>
-                    </div>
-                </div>
+                <InfoSection />
 
                 {/* FAQ 섹션 */}
-                <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-                    <h2 className="text-xl font-semibold mb-4">자주 묻는 질문</h2>
-                    <div className="space-y-4">
-                        <div>
-                            <h3 className="font-medium text-gray-900 mb-2">Q: 중안부 길이는 어떻게 측정하나요?</h3>
-                            <p className="text-gray-600">
-                                A: AI가 자동으로 얼굴의 주요 포인트를 인식하여 눈썹에서 코끝까지의 거리를 측정합니다.
-                            </p>
-                        </div>
-                        <div>
-                            <h3 className="font-medium text-gray-900 mb-2">Q: 결과는 얼마나 정확한가요?</h3>
-                            <p className="text-gray-600">A: 최신 AI 기술을 활용하여 높은 정확도를 보장합니다.</p>
-                        </div>
-                        <div>
-                            <h3 className="font-medium text-gray-900 mb-2">Q: 개인정보는 안전한가요?</h3>
-                            <p className="text-gray-600">
-                                A: 모든 분석은 사용자의 기기에서 실시간으로 이루어지며, 어떠한 이미지도 서버에 저장되지
-                                않습니다.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                <FAQSection />
 
                 {/* 연락처 및 저작권 섹션 */}
                 <div className="bg-white p-6 rounded-lg shadow-sm mb-8 text-center">
@@ -148,6 +109,7 @@ export const MainPage = () => {
                     </div>
                 </div>
             </section>
+            </main>
         </div>
     );
 };
