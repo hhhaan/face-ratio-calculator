@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { FaceDetector, FaceLandmarker } from '@mediapipe/tasks-vision';
-import { FACE_DETECTION_CONFIG } from '@/features/face-detection/config';
+import { FACE_DETECTION_CONFIG } from '../config';
+import { calculateFaceRatios } from '../lib/calculate-face-ratios';
 import { drawHorizontalLine, drawBox } from '@/features/canvas/utils';
 
 export const useFaceDetector = ({
@@ -42,8 +43,8 @@ export const useFaceDetector = ({
     // 프레임 관련 변수들을 useRef로 관리하여 렌더링 사이에도 값이 유지되도록 함
     const frameRef = useRef({
         lastFrameTime: 0,
-        fps: 8,
-        frameInterval: 1000 / 8, // 8 FPS
+        fps: FACE_DETECTION_CONFIG.defaultFps,
+        frameInterval: 1000 / FACE_DETECTION_CONFIG.defaultFps, // 8 FPS
     });
 
     // useEffect에서 한 번만 생성
@@ -77,11 +78,15 @@ export const useFaceDetector = ({
         }
 
         // 원본 크기 저장
-        const originalWidth = video.videoWidth || 640;
-        const originalHeight = video.videoHeight || 480;
+        const originalWidth = video.videoWidth || FACE_DETECTION_CONFIG.defaultVideoWidth;
+        const originalHeight = video.videoHeight || FACE_DETECTION_CONFIG.defaultVideoHeight;
 
-        // 0.7 비율로 처리
-        const scale = 0.7;
+        const isMobile =
+            window.innerWidth < 768 ||
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const scale = isMobile
+            ? FACE_DETECTION_CONFIG.processingScale.mobile
+            : FACE_DETECTION_CONFIG.processingScale.desktop;
 
         // 처리용 임시 캔버스 생성
         const tempCanvas = tempCanvasRef.current;
@@ -130,29 +135,15 @@ export const useFaceDetector = ({
 
             if (landmarkResult.faceLandmarks.length > 0) {
                 const landmarks = landmarkResult.faceLandmarks[0];
+                const ratios = calculateFaceRatios(landmarks, extendedBox, canvas.height);
+                setFaceRatios(ratios);
 
-                const leftEyebrowLower = landmarks[282];
-                const rightEyebrowLower = landmarks[52];
-                const noseBottom = landmarks[94];
-
-                const eyebrowBottomY = (leftEyebrowLower.y + rightEyebrowLower.y) / 2;
-                const hairlineY = extendedBox.originY;
-
-                const eyebrowLineY = eyebrowBottomY * canvas.height;
-                const noseBottomY = noseBottom.y * canvas.height;
-                const chinBottomY = extendedBox.originY + extendedBox.height;
-
-                const foreheadHeight = eyebrowLineY - hairlineY;
-                const midFaceHeight = noseBottomY - eyebrowLineY;
-                const lowerFaceHeight = chinBottomY - noseBottomY;
-
-                const totalHeight = extendedBox.height;
-
-                setFaceRatios({
-                    forehead: Number(((foreheadHeight / totalHeight) * 100).toFixed(1)),
-                    midFace: Number(((midFaceHeight / totalHeight) * 100).toFixed(1)),
-                    lowerFace: Number(((lowerFaceHeight / totalHeight) * 100).toFixed(1)),
-                });
+                const eyebrowLineY =
+                    ((landmarks[FACE_DETECTION_CONFIG.landmarkIndices.leftEyebrowLower].y +
+                        landmarks[FACE_DETECTION_CONFIG.landmarkIndices.rightEyebrowLower].y) /
+                        2) *
+                    canvas.height;
+                const noseBottomY = landmarks[FACE_DETECTION_CONFIG.landmarkIndices.noseBottom].y * canvas.height;
 
                 drawBox(
                     ctx,
@@ -171,7 +162,7 @@ export const useFaceDetector = ({
                 drawHorizontalLine(ctx, extendedBox.originX, noseBottomY, extendedBox.width);
             }
         });
-    }, [videoRef]);
+    }, []);
 
     // 애니메이션 루프
     useEffect(() => {
