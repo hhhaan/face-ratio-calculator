@@ -59,6 +59,9 @@ jspm_packages/
 .env.production.local
 .env.local
 
+# MediaPipe models (downloaded at build time)
+public/mediapipe/
+
 # Firebase
 .firebase/
 firebase-debug.log*
