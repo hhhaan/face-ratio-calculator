@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCamera } from '@/features/camera';
-import { useFaceDetector } from '@/features/face-detection/hooks';
+import { useFaceDetector, useVisionModels } from '@/features/face-detection/hooks';
 import { ratio111Score } from '@/features/scoring';
 import { ShareButtons } from '@/features/share';
 import { FaceCamera } from './ui/face-camera';
@@ -18,11 +18,15 @@ export const MainPage = () => {
     const [isCalculating, setIsCalculating] = useState(false);
     const [boxHeight, setBoxHeight] = useState(0);
     const { videoRef, isVideoLoaded, isFreezed, setIsFreezed } = useCamera();
+    const { faceDetectorRef, faceLandmarkerRef, isModelReady } = useVisionModels();
     const { faceRatios, canvasRef } = useFaceDetector({
         videoRef,
         isVideoLoaded,
         isFreezed,
         boxHeight,
+        faceDetectorRef,
+        faceLandmarkerRef,
+        isModelReady,
     });
 
     const toggleFreeze = () => {

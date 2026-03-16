@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { initializeVisionModels } from '@/shared/lib/mediapipe';
 import { FaceDetector, FaceLandmarker } from '@mediapipe/tasks-vision';
 import { FACE_DETECTION_CONFIG } from '@/features/face-detection/config';
 import { drawHorizontalLine, drawBox } from '@/features/canvas/utils';
@@ -9,19 +8,22 @@ export const useFaceDetector = ({
     isVideoLoaded,
     isFreezed,
     boxHeight,
+    faceDetectorRef,
+    faceLandmarkerRef,
+    isModelReady,
 }: {
     videoRef: React.RefObject<HTMLVideoElement | null>;
     isVideoLoaded: boolean;
     isFreezed: boolean;
     boxHeight: number;
+    faceDetectorRef: React.RefObject<FaceDetector | null>;
+    faceLandmarkerRef: React.RefObject<FaceLandmarker | null>;
+    isModelReady: boolean;
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const tempCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const tempCtxRef = useRef<CanvasRenderingContext2D | null>(null);
     const boxHeightRef = useRef<number>(boxHeight);
-
-    const [faceDetector, setFaceDetector] = useState<FaceDetector | null>(null);
-    const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(null);
 
     const [faceRatios, setFaceRatios] = useState<{
         forehead: number;
@@ -59,21 +61,8 @@ export const useFaceDetector = ({
         };
     }, []);
 
-    useEffect(() => {
-        const init = async () => {
-            try {
-                const { landmarker, detector } = await initializeVisionModels();
-                setFaceDetector(detector);
-                setFaceLandmarker(landmarker);
-            } catch (error) {
-                console.error('Failed to initialize vision models:', error);
-            }
-        };
-        init();
-    }, []);
-
     const detectFace = useCallback(async () => {
-        if (!faceDetector || !faceLandmarker) {
+        if (!faceDetectorRef.current || !faceLandmarkerRef.current) {
             console.error('Face detector or landmarker not initialized');
             return;
         }
@@ -107,8 +96,8 @@ export const useFaceDetector = ({
         tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
 
         // 축소된 이미지로 감지 수행
-        const detections = faceDetector.detect(tempCanvas);
-        const landmarkResult = faceLandmarker.detect(tempCanvas);
+        const detections = faceDetectorRef.current.detect(tempCanvas);
+        const landmarkResult = faceLandmarkerRef.current.detect(tempCanvas);
 
         if (canvas.width !== originalWidth || canvas.height !== originalHeight) {
             canvas.width = originalWidth;
@@ -120,7 +109,7 @@ export const useFaceDetector = ({
 
         detections.detections.forEach((detection) => {
             const box = detection.boundingBox;
-            if (!box || !faceDetector || !faceLandmarker) return;
+            if (!box) return;
 
             // 스케일에 맞게 좌표 조정
             const scaledBox = {
@@ -182,7 +171,7 @@ export const useFaceDetector = ({
                 drawHorizontalLine(ctx, extendedBox.originX, noseBottomY, extendedBox.width);
             }
         });
-    }, [videoRef, faceDetector, faceLandmarker]);
+    }, [videoRef]);
 
     // 애니메이션 루프
     useEffect(() => {
@@ -207,7 +196,7 @@ export const useFaceDetector = ({
             }
         };
 
-        if (faceDetector && faceLandmarker && isVideoLoaded && !isFreezed) {
+        if (isModelReady && isVideoLoaded && !isFreezed) {
             // 첫 프레임에서 lastFrameTime 초기화를 위해 timestamp 전달
             animationFrameId = requestAnimationFrame(animate);
 
@@ -215,7 +204,7 @@ export const useFaceDetector = ({
                 cancelAnimationFrame(animationFrameId);
             };
         }
-    }, [detectFace, faceDetector, faceLandmarker, isVideoLoaded, isFreezed]); // boxHeight 의존성 제거
+    }, [detectFace, isModelReady, isVideoLoaded, isFreezed]); // boxHeight 의존성 제거
 
-    return { faceDetector, faceLandmarker, faceRatios, canvasRef, detectFace };
+    return { faceRatios, canvasRef, detectFace };
 };
