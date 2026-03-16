@@ -6,12 +6,14 @@ export const FaceCamera = ({
     canvasRef,
     isCalculating,
     isFreezed,
+    isModelReady,
     toggleFreeze,
 }: {
     videoRef: RefObject<HTMLVideoElement | null>;
     canvasRef: RefObject<HTMLCanvasElement | null>;
     isCalculating: boolean;
     isFreezed: boolean;
+    isModelReady: boolean;
     toggleFreeze: () => void;
 }) => {
     return (
@@ -27,6 +29,11 @@ export const FaceCamera = ({
                     ref={canvasRef}
                     className="scale-x-[-1] absolute top-0 left-0 w-full h-full rounded-xl overflow-hidden"
                 />
+                {!isModelReady && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 rounded">
+                        <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
+                    </div>
+                )}
                 {isCalculating && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-30 backdrop-blur-sm rounded">
                         <div className="flex flex-col items-center bg-white p-4 rounded-lg shadow-md">

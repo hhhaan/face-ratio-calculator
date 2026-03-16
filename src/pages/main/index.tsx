@@ -76,6 +76,7 @@ export const MainPage = () => {
                         canvasRef={canvasRef}
                         isCalculating={isCalculating}
                         isFreezed={isFreezed}
+                        isModelReady={isModelReady}
                         toggleFreeze={toggleFreeze}
                     />
 
