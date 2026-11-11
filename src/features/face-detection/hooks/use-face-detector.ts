@@ -98,10 +98,7 @@ export const useFaceDetector = ({
             tempCanvas.height = originalHeight * scale;
         }
 
-        // 추론 입력만 흑백. 화면 캔버스는 컬러.
-        tempCtx.filter = 'grayscale(1)';
         tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-        tempCtx.filter = 'none';
 
         // 축소된 이미지로 감지 수행
         const detections = faceDetectorRef.current.detect(tempCanvas);
